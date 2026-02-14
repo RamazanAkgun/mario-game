@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>İyi ki Sen Hacer ❤️</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+
+<style>
+:root{
+  --scale: min(1vw, 1vh);
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  overflow:hidden;
+  background:#87CEEB;
+  font-family:Arial, sans-serif;
+}
+
+#viewport{
+  width:100vw;
+  height:100vh;
+  position:relative;
+}
+
+#world{
+  position:absolute;
+  width:650vw;
+  height:100%;
+}
+
+#ground{
+  position:absolute;
+  bottom:0;
+  width:650vw;
+  height:12vh;
+  background:#2ecc71;
+}
+
+#mario{
+  position:absolute;
+  bottom:12vh;
+  left:10vw;
+  width:8vw;
+  max-width:80px;
+  min-width:50px;
+  z-index:10;
+  transition:bottom .25s;
+}
+
+.box{
+  position:absolute;
+  bottom:30vh;
+  width:6vw;
+  max-width:60px;
+  min-width:42px;
+}
+
+/* 🌱 ÇİM ENGEL */
+.obstacle{
+  position:absolute;
+  bottom:12vh;
+  width:7vw;
+  height:7vw;
+  max-width:70px;
+  max-height:70px;
+  min-width:45px;
+  min-height:45px;
+  background:linear-gradient(
+    to bottom,
+    #4CAF50 0%,
+    #4CAF50 25%,
+    #8B4513 25%,
+    #8B4513 100%
+  );
+  border:2px solid #5a3a1a;
+  border-radius:4px;
+}
+
+.hit{
+  transform:scale(1.3) rotate(10deg);
+  filter:brightness(1.6);
+}
+
+.boss{
+  position:absolute;
+  bottom:12vh;
+  width:14vw;
+  max-width:140px;
+  min-width:90px;
+}
+
+#message{
+  position:absolute;
+  top:14vh;
+  width:100%;
+  text-align:center;
+  font-size:clamp(18px, 4vw, 32px);
+  color:white;
+  opacity:0;
+  transform:translateY(20px) scale(.9);
+  transition:.5s;
+  text-shadow:2px 2px 6px black;
+  z-index:20;
+  padding:0 5vw;
+}
+
+#message.show{
+  opacity:1;
+  transform:translateY(0) scale(1);
+}
+
+#countdown{
+  position:absolute;
+  top:45%;
+  width:100%;
+  text-align:center;
+  font-size:clamp(22px, 6vw, 42px);
+  color:white;
+  text-shadow:3px 3px 8px black;
+  z-index:30;
+}
+
+.heart{
+  position:absolute;
+  top:-50px;
+  font-size:clamp(18px, 4vw, 28px);
+  animation:fall 3s linear infinite;
+}
+
+@keyframes fall{
+  to{transform:translateY(110vh)}
+}
+
+.explosion{
+  position:absolute;
+  width:16vw;
+  height:16vw;
+  max-width:160px;
+  max-height:160px;
+  background:radial-gradient(circle,yellow,red);
+  border-radius:50%;
+  animation:boom .6s ease-out forwards;
+}
+
+@keyframes boom{
+  from{transform:scale(.2);opacity:1}
+  to{transform:scale(2);opacity:0}
+}
+</style>
+</head>
+
+<body>
+
+<div id="viewport">
+  <div id="message"></div>
+  <div id="countdown"></div>
+  <img id="mario" src="mario.png">
+  <div id="world">
+    <div id="ground"></div>
+  </div>
+</div>
+
+<audio id="jump" src="m2.mp3"></audio>
+<audio id="coin" src="m1.mp3"></audio>
+<audio id="boom" src="m1.mp3"></audio>
+
+<script>
+const world=document.getElementById("world");
+const mario=document.getElementById("mario");
+const message=document.getElementById("message");
+const countdown=document.getElementById("countdown");
+const jump=document.getElementById("jump");
+const coin=document.getElementById("coin");
+const boom=document.getElementById("boom");
+const ground=document.getElementById("ground");
+
+let cameraX=0;
+let gamePaused=true;
+
+const music=new Audio("https://cdn.pixabay.com/audio/2023/02/28/audio_0f4d1bbfe2.mp3");
+music.loop=true;
+music.volume=0.5;
+
+const texts=[
+ "Seni ilk gördüğüm an kalbim durdu ❤️",
+ "Gülüşün hayatıma bahar gibi geldi 🌸",
+ "Yanımdayken dünya daha güzel 💫",
+ "Kalbim seni seçti, hep seni 💖",
+ "İyi ki benimlesin, iyi ki varsın 💕"
+];
+
+const timeline=texts.map((t,i)=>({x:80+i*90,text:t}));
+
+timeline.forEach(t=>{
+ const b=document.createElement("img");
+ b.src="gold box.png";
+ b.className="box";
+ b.style.left=t.x+"vw";
+ world.appendChild(b);
+ t.el=b;
+});
+
+let obstacles=[];
+
+const boss=document.createElement("img");
+boss.src="heart.png";
+boss.className="boss";
+boss.style.left="420vw";
+world.appendChild(boss);
+
+function marioJump(){
+ jump.currentTime=0;
+ jump.play();
+ mario.style.bottom="28vh";
+ setTimeout(()=>mario.style.bottom="12vh",300);
+}
+
+function spawnObstacle(x){
+ const o=document.createElement("div");
+ o.className="obstacle";
+ o.style.left=(x+20)+"vw";
+ world.appendChild(o);
+ obstacles.push(o);
+}
+
+function spawnHearts(){
+ for(let i=0;i<40;i++){
+  const h=document.createElement("div");
+  h.className="heart";
+  h.innerHTML="❤️";
+  h.style.left=Math.random()*100+"vw";
+  h.style.animationDelay=Math.random()*2+"s";
+  document.body.appendChild(h);
+ }
+}
+
+function explode(x){
+ const e=document.createElement("div");
+ e.className="explosion";
+ e.style.left=x+"vw";
+ e.style.top="30vh";
+ world.appendChild(e);
+ setTimeout(()=>e.remove(),600);
+}
+
+/* ⏳ GERİ SAYIM */
+let count=3;
+countdown.innerText="Aşk parkuru için Son 3 Saniye";
+
+const timer=setInterval(()=>{
+ count--;
+ if(count>0){
+  countdown.innerText=`Aşk parkuru için Son ${count} Saniye`;
+ }else{
+  countdown.innerText="";
+  gamePaused=false;
+  music.play();
+  clearInterval(timer);
+ }
+},1000);
+
+function loop(){
+ if(!gamePaused){
+  cameraX+=0.35;
+  world.style.transform=`translateX(-${cameraX}vw)`;
+
+  timeline.forEach(t=>{
+   if(!t.done && cameraX>t.x-10){
+    marioJump();
+    coin.currentTime=0;
+    coin.play();
+    t.el.classList.add("hit");
+    setTimeout(()=>t.el.remove(),150);
+    message.innerText=t.text;
+    message.classList.add("show");
+    setTimeout(()=>message.classList.remove("show"),2500);
+    spawnObstacle(t.x);
+    t.done=true;
+   }
+  });
+
+  obstacles.forEach(o=>{
+   if(!o.done && cameraX>parseFloat(o.style.left)-10){
+    marioJump();
+    o.done=true;
+    setTimeout(()=>o.remove(),400);
+   }
+  });
+
+  if(cameraX>400 && !boss.done){
+   gamePaused=true;
+   document.body.style.background="#7b0000";
+   ground.style.background="#8B4513";
+   marioJump();
+   boom.play();
+   explode(420);
+   boss.remove();
+   message.innerText="İYİ Kİ SEN HACER ❤️";
+   message.classList.add("show");
+   spawnHearts();
+   boss.done=true;
+  }
+ }
+ requestAnimationFrame(loop);
+}
+loop();
+</script>
+
+</body>
+</html>
